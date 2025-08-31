@@ -20,7 +20,16 @@ const authMiddleware = require('./middlewares/auth.middleware');
 const app = express();
 
 // Security middleware
-app.use(helmet());
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc: ["'self'"],
+      imgSrc: ["'self'", "data:", "http://localhost:5000"],  // allow avatars served from your API
+      scriptSrc: ["'self'"],
+      styleSrc: ["'self'", "'unsafe-inline'"]
+    }
+  }
+}));
 app.use(cors());
 
 // Rate limiting
@@ -52,8 +61,12 @@ app.use('/api/auth', authRoutes);
 app.use('/api/projects/:projectId/bugs', authMiddleware, bugRoutes);
 app.use('/api/users', authMiddleware, userRoutes);
 app.use('/uploads', express.static('uploads'));
-app.use('/api/projects', projectRoutes);
+app.use('/api/projects', authMiddleware, projectRoutes);
 
+
+app.get('/', (req, res) => {
+  res.json({ message: 'Bug Tracker backend is running' });
+});
 // Health check
 app.get('/health', (req, res) => {
   res.status(200).json({ status: 'OK', message: 'Server is running' });
