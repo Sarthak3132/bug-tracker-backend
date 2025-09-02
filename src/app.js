@@ -24,14 +24,16 @@ app.use(helmet({
   contentSecurityPolicy: {
     directives: {
       defaultSrc: ["'self'"],
-      imgSrc: ["'self'", "data:", "http://localhost:5000"],  // allow avatars served from your API
+      imgSrc: ["'self'", "data:", process.env.NODE_ENV === 'production' ? process.env.BACKEND_URL : "http://localhost:5000"],
       scriptSrc: ["'self'"],
       styleSrc: ["'self'", "'unsafe-inline'"]
     }
   }
 }));
 app.use(cors({
-  origin: ['http://localhost:3000', 'https://your-frontend-domain.com'],
+  origin: process.env.NODE_ENV === 'production' 
+    ? [process.env.FRONTEND_URL || 'https://your-production-frontend.vercel.app']
+    : ['http://localhost:3000'],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'],
   credentials: true
@@ -40,7 +42,7 @@ app.use(cors({
 // Rate limiting
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000, // 15 minutes
-  max: 100 // limit each IP to 100 requests per windowMs
+  max: process.env.NODE_ENV === 'production' ? 100 : 1000 // Higher limit for development
 });
 app.use(limiter);
 

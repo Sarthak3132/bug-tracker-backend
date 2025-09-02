@@ -11,7 +11,23 @@ const isValidEmail = (email) => {
 
 const createBug = async (bugData) => {
   const newBug = new Bug(bugData);
-  return await newBug.save();
+  const savedBug = await newBug.save();
+  
+  // Send email notification if bug is assigned during creation
+  if (savedBug.assignedTo) {
+    try {
+      const populatedBug = await getBugById(savedBug._id);
+      if (populatedBug.assignedTo && populatedBug.assignedTo.email && isValidEmail(populatedBug.assignedTo.email)) {
+        console.log(`Sending assignment email to ${populatedBug.assignedTo.email} for new bug ${populatedBug._id}`);
+        await notifyAssignedUser(populatedBug.assignedTo.email, populatedBug);
+        console.log('Assignment email sent successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send assignment email for new bug:', error);
+    }
+  }
+  
+  return savedBug;
 };
 
 const getAllBugs = async (filter, options = {}) => {
@@ -53,6 +69,7 @@ const getAllBugs = async (filter, options = {}) => {
   const bugs = await Bug.find(query)
     .populate('assignedTo', 'name email')
     .populate('reportedBy', 'name email')
+    .populate('project', 'name')
     .populate('comments.author', 'name email')
     .populate('history.changedBy', 'name email')
     .sort(options.sort || { createdAt: -1 })
@@ -67,6 +84,7 @@ const getBugById = async (id) => {
   return await Bug.findById(id)
     .populate('assignedTo', 'name email')
     .populate('reportedBy', 'name email')
+    .populate('project', 'name')
     .populate('history.changedBy', 'name email')
     .populate('comments.author', 'name email');
 };
@@ -79,6 +97,7 @@ const updateBug = async (id, updateData, userId) => {
 
   const userObjectId = new mongoose.Types.ObjectId(userId);
   const now = new Date();
+  const oldAssignedTo = bug.assignedTo;
 
   const statusComment = updateData.statusComment;
   delete updateData.statusComment;
@@ -132,8 +151,22 @@ const updateBug = async (id, updateData, userId) => {
   }
 
   await bug.save();
+  const updatedBug = await getBugById(id);
 
-  return await getBugById(id);
+  // Send email notification if assignedTo changed
+  if (updateData.assignedTo && updateData.assignedTo !== oldAssignedTo?.toString()) {
+    try {
+      if (updatedBug.assignedTo && updatedBug.assignedTo.email && isValidEmail(updatedBug.assignedTo.email)) {
+        console.log(`Sending assignment email to ${updatedBug.assignedTo.email} for updated bug ${updatedBug._id}`);
+        await notifyAssignedUser(updatedBug.assignedTo.email, updatedBug);
+        console.log('Assignment email sent successfully');
+      }
+    } catch (error) {
+      console.error('Failed to send assignment email for updated bug:', error);
+    }
+  }
+
+  return updatedBug;
 };
 
 

@@ -1,13 +1,13 @@
 const winston = require('winston');
 
 const logger = winston.createLogger({
-  level: 'info',
+  level: process.env.NODE_ENV === 'production' ? 'error' : 'debug',
   format: winston.format.combine(
     winston.format.timestamp(),
     winston.format.errors({ stack: true }),
     winston.format.json()
   ),
-  defaultMeta: { service: 'bug-tracker' },
+  defaultMeta: { service: 'bug-tracker-api' },
   transports: [
     new winston.transports.File({ filename: 'logs/error.log', level: 'error' }),
     new winston.transports.File({ filename: 'logs/combined.log' }),

@@ -16,14 +16,29 @@ passport.use(new GoogleStrategy({
   callbackURL: "/api/auth/google/callback"
 }, async (accessToken, refreshToken, profile, done) => {
   try {
+    const email = profile.emails[0].value;
+    
+    // First check if user exists with this Google ID
     let user = await User.findOne({ googleId: profile.id });
+    
     if (!user) {
-      user = await User.create({
-        googleId: profile.id,
-        name: profile.displayName,
-        email: profile.emails[0].value
-      });
+      // Check if user exists with this email (registered normally)
+      user = await User.findOne({ email: email });
+      
+      if (user) {
+        // User exists with email, link Google account
+        user.googleId = profile.id;
+        await user.save();
+      } else {
+        // Create new user
+        user = await User.create({
+          googleId: profile.id,
+          name: profile.displayName,
+          email: email
+        });
+      }
     }
+    
     return done(null, user);
   } catch (err) {
     console.error('Error in GoogleStrategy verify callback:', err);
