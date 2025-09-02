@@ -5,7 +5,7 @@ const projectRoleCheck = (allowedRoles = []) => {
   return async (req, res, next) => {
     try {
       const userId = req.user._id.toString();
-      const projectId = req.params.projectId || req.body.projectId;
+      const projectId = req.params.projectId || req.params.id || req.body.projectId;
 
       if (!mongoose.Types.ObjectId.isValid(projectId)) {
         return res.status(400).json({ message: 'Invalid project ID format' });

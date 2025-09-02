@@ -3,16 +3,11 @@ const mongoose = require('mongoose');
 
 const getAllProjects = async (req, res) => {
   try {
-    console.log('Logged in user id:', req.user._id);
-
     const userId = new mongoose.Types.ObjectId(req.user._id);
-    console.log('Using userId for query:', userId);
 
     const projects = await Project.find({
       members: { $elemMatch: { userId: userId } }
     }).populate('createdBy', 'name email');
-
-    console.log(`Projects found for user ${userId}:`, projects.length);
 
     res.json(projects);
   } catch (error) {
@@ -23,7 +18,12 @@ const getAllProjects = async (req, res) => {
 
 const getProjectById = async (req, res) => {
   try {
-    const project = await Project.findById(req.params.id).populate('createdBy', 'name email');
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid project ID format' });
+    }
+    const project = await Project.findById(req.params.id)
+      .populate('createdBy', 'name email')
+      .populate('members.userId', 'name email');
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
@@ -53,6 +53,9 @@ const createProject = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid project ID format' });
+    }
     const project = await Project.findByIdAndUpdate(
       req.params.id,
       req.body,
@@ -69,12 +72,27 @@ const updateProject = async (req, res) => {
 
 const deleteProject = async (req, res) => {
   try {
-    const project = await Project.findByIdAndDelete(req.params.id);
+    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+      return res.status(400).json({ message: 'Invalid project ID format' });
+    }
+    
+    // First find the project to check permissions
+    const project = await Project.findById(req.params.id);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
+    
+    // Check if user is admin of this project
+    const userMember = project.members.find(m => m.userId.toString() === req.user._id.toString());
+    if (!userMember || userMember.role !== 'admin') {
+      return res.status(403).json({ message: 'Only project admins can delete projects' });
+    }
+    
+    // Delete the project
+    await Project.findByIdAndDelete(req.params.id);
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
+    console.error('Delete project error:', error);
     res.status(500).json({ message: error.message });
   }
 };

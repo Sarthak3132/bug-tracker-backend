@@ -2,7 +2,6 @@ const express = require('express');
 const authController = require('../controllers/auth.controller');
 const passport = require('passport'); 
 const { generateToken } = require('../config/jwt');
-console.log('Importing rateLimiters from ../middlewares/rateLimiters');
 const { loginLimiter, passwordResetLimiter } = require('../middlewares/rateLimiters');
 const authMiddleware = require('../middlewares/auth.middleware');
 const router = express.Router();
