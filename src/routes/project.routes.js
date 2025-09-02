@@ -20,8 +20,8 @@ router.use(authMiddleware);
 router.get('/', getAllProjects);
 router.get('/:id', getProjectById);
 router.post('/', createProject);
-router.put('/:id', projectRoleCheck(['admin']), updateProject);
-router.delete('/:id', projectRoleCheck(['admin']), deleteProject);
+router.put('/:projectId', projectRoleCheck(['admin']), updateProject);
+router.delete('/:projectId', projectRoleCheck(['admin']), deleteProject);
 
 router.get('/:projectId/members', projectRoleCheck(['admin', 'developer', 'tester']), getProjectMembers);
 router.post('/:projectId/members', projectRoleCheck(['admin']), addMember);

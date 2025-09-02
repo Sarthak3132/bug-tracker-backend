@@ -24,17 +24,17 @@ router.get('/test', (req, res) => {
 
 // Google OAuth callback route
 router.get('/google/callback', 
-  passport.authenticate('google', { failureRedirect: 'http://localhost:3000/login' }), 
+  passport.authenticate('google', { failureRedirect: `${process.env.FRONTEND_URL || 'http://localhost:3000'}/login` }), 
   (req, res) => {
     if (!req.user) {
-      return res.redirect('http://localhost:3000/login?error=auth_failed');
+      return res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/login?error=auth_failed`);
     }
     const payload = {
       id: req.user._id,
       email: req.user.email,
     };
     const token = generateToken(payload);
-    res.redirect(`http://localhost:3000/oauth-callback?token=${token}`);
+    res.redirect(`${process.env.FRONTEND_URL || 'http://localhost:3000'}/oauth-callback?token=${token}`);
   }
 );
 

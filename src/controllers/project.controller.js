@@ -18,10 +18,11 @@ const getAllProjects = async (req, res) => {
 
 const getProjectById = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const projectId = req.params.projectId || req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({ message: 'Invalid project ID format' });
     }
-    const project = await Project.findById(req.params.id)
+    const project = await Project.findById(projectId)
       .populate('createdBy', 'name email')
       .populate('members.userId', 'name email');
     if (!project) {
@@ -53,14 +54,16 @@ const createProject = async (req, res) => {
 
 const updateProject = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const projectId = req.params.projectId || req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({ message: 'Invalid project ID format' });
     }
     const project = await Project.findByIdAndUpdate(
-      req.params.id,
+      projectId,
       req.body,
       { new: true }
-    ).populate('createdBy', 'name email');
+    ).populate('createdBy', 'name email')
+     .populate('members.userId', 'name email');
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
@@ -72,12 +75,13 @@ const updateProject = async (req, res) => {
 
 const deleteProject = async (req, res) => {
   try {
-    if (!mongoose.Types.ObjectId.isValid(req.params.id)) {
+    const projectId = req.params.projectId || req.params.id;
+    if (!mongoose.Types.ObjectId.isValid(projectId)) {
       return res.status(400).json({ message: 'Invalid project ID format' });
     }
     
     // First find the project to check permissions
-    const project = await Project.findById(req.params.id);
+    const project = await Project.findById(projectId);
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
@@ -89,7 +93,7 @@ const deleteProject = async (req, res) => {
     }
     
     // Delete the project
-    await Project.findByIdAndDelete(req.params.id);
+    await Project.findByIdAndDelete(projectId);
     res.json({ message: 'Project deleted successfully' });
   } catch (error) {
     console.error('Delete project error:', error);
