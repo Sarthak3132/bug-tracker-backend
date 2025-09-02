@@ -37,7 +37,7 @@ const userSchema = new mongoose.Schema({
     default: 'developer',
   },
   avatar: {
-    type: String, // store as URL or base64 string
+    type: String,
     trim: true
   },
   bio: {
