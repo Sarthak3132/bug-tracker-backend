@@ -1,5 +1,5 @@
 const express = require('express');
-const { getProfile, updateProfile, getAllUsers } = require('../controllers/user.controller');
+const { getProfile, updateProfile, getAllUsers, searchUsers } = require('../controllers/user.controller');
 const authMiddleware = require('../middlewares/auth.middleware');
 const rolesMiddleware = require('../middlewares/roles.middleware');
 const upload = require('../middlewares/upload.middleware');
@@ -31,6 +31,7 @@ router.post('/profile/avatar', upload.single('avatar'), async (req, res) => {
   }
 });
 
+router.get('/search', searchUsers);
 router.get('/', rolesMiddleware(['admin']), getAllUsers);
 
 module.exports = router;

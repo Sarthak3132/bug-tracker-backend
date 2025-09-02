@@ -1,6 +1,33 @@
 const User = require('../models/user.model');
 
 /**
+ * GET /api/users/search?q=searchTerm
+ * Search users by name or email (limited results)
+ */
+const searchUsers = async (req, res) => {
+  try {
+    const { q } = req.query;
+    if (!q || q.length < 2) {
+      return res.json([]);
+    }
+
+    const users = await User.find({
+      $or: [
+        { name: { $regex: q, $options: 'i' } },
+        { email: { $regex: q, $options: 'i' } }
+      ]
+    })
+    .select('name email')
+    .limit(10);
+
+    res.json(users);
+  } catch (error) {
+    console.error('Error searching users:', error);
+    res.status(500).json({ message: 'Server error' });
+  }
+};
+
+/**
  * GET /api/users/profile
  * Authenticated user gets their profile
  */
@@ -80,4 +107,5 @@ module.exports = {
   getProfile,
   updateProfile,
   getAllUsers,
+  searchUsers,
 };

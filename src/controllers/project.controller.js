@@ -24,7 +24,7 @@ const getProjectById = async (req, res) => {
     }
     const project = await Project.findById(projectId)
       .populate('createdBy', 'name email')
-      .populate('members.userId', 'name email');
+      .populate('members.userId', 'name email avatar');
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
@@ -63,7 +63,7 @@ const updateProject = async (req, res) => {
       req.body,
       { new: true }
     ).populate('createdBy', 'name email')
-     .populate('members.userId', 'name email');
+     .populate('members.userId', 'name email avatar');
     if (!project) {
       return res.status(404).json({ message: 'Project not found' });
     }
@@ -104,10 +104,10 @@ const deleteProject = async (req, res) => {
 // Add member
 const addMember = async (req, res) => {
   const { projectId } = req.params;
-  const { userId, role } = req.body;
+  const { userId, userEmail, role } = req.body;
 
-  if (!userId || !role) {
-    return res.status(400).json({ message: 'userId and role are required' });
+  if ((!userId && !userEmail) || !role) {
+    return res.status(400).json({ message: 'userId or userEmail, and role are required' });
   }
 
   if (!['admin', 'developer', 'tester'].includes(role)) {
@@ -118,11 +118,21 @@ const addMember = async (req, res) => {
     const project = await Project.findById(projectId);
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
-    const existingMember = project.members.find(m => m.userId.toString() === userId);
+    let targetUserId = userId;
+    
+    // If email provided, find user by email
+    if (userEmail && !userId) {
+      const User = require('../models/user.model');
+      const user = await User.findOne({ email: userEmail });
+      if (!user) return res.status(404).json({ message: 'User not found with this email' });
+      targetUserId = user._id;
+    }
+
+    const existingMember = project.members.find(m => m.userId.toString() === targetUserId);
     if (existingMember) return res.status(409).json({ message: 'User already a member' });
 
     project.members.push({
-      userId: new mongoose.Types.ObjectId(userId),
+      userId: new mongoose.Types.ObjectId(targetUserId),
       role: role,
     });
     await project.save();
@@ -158,7 +168,7 @@ const getProjectMembers = async (req, res) => {
   const { projectId } = req.params;
 
   try {
-    const project = await Project.findById(projectId).populate('members.userId', 'name email');
+    const project = await Project.findById(projectId).populate('members.userId', 'name email avatar');
     if (!project) return res.status(404).json({ message: 'Project not found' });
 
     res.json(project.members);
